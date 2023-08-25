@@ -12,12 +12,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.library.Architectures.layeredArchitecture;
+import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
 
 @AnalyzeClasses(packages = "de.openvalue.example", importOptions = ImportOption.DoNotIncludeTests.class)
 public class ArchUnitTests {
 
     @ArchTest
-    void recipesDomainRules(JavaClasses classes) {
+    void recipesDomainIsIsolated(JavaClasses classes) {
         var rule = classes()
                 .that()
                 .resideInAPackage("..recipes..")
@@ -27,13 +28,12 @@ public class ArchUnitTests {
         rule.check(classes);
     }
 
+
     @ArchTest
-    void ingredientsDomainRules(JavaClasses classes) {
+    void ingredientsDomainInternalsAreIsolated(JavaClasses classes) {
         var rule = classes()
                 .that()
-                .resideInAPackage("..ingredients..")
-                .and()
-                .areAnnotatedWith(Repository.class)
+                .resideInAPackage("..ingredients.(**)")
                 .should()
                 .onlyBeAccessed()
                 .byAnyPackage("..ingredients..");
@@ -41,15 +41,28 @@ public class ArchUnitTests {
     }
 
     @ArchTest
-    void serviceLayerDependencyRules(JavaClasses classes) {
-        var rule = classes()
-                .that()
-                .areAnnotatedWith(Service.class)
-                .should().onlyHaveDependentClassesThat().areAnnotatedWith(Service.class)
-                .orShould().onlyHaveDependentClassesThat().areAnnotatedWith(RestController.class);
+    void domainsShouldBeFreeOfCycles(JavaClasses classes) {
+        var rule = slices()
+                .matching("de.openvalue.example.(*)..")
+                .should()
+                .beFreeOfCycles();
         rule.check(classes);
     }
 
+    @ArchTest
+    void layeredArchitectureCustomRules(JavaClasses classes) {
+        var repositoryRule = classes()
+                .that()
+                .areAnnotatedWith(Repository.class)
+                .should().onlyHaveDependentClassesThat().areAnnotatedWith(Service.class);
+        var servicesRule = classes()
+                .that()
+                .areAnnotatedWith(Service.class)
+                .should().onlyHaveDependentClassesThat().areAnnotatedWith(RestController.class);
+
+        repositoryRule.check(classes);
+        servicesRule.check(classes);
+    }
 
     @ArchTest
     void layeredArchitectureRule(JavaClasses classes) {
