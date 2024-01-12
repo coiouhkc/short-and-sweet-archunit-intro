@@ -91,6 +91,7 @@ void modulesDoNotHaveMutualDependencies() {
 * https://www.archunit.org
 * https://github.com/TNG/ArchUnit-Examples/tree/main/example-junit5
 * https://www.morling.dev/blog/the-code-review-pyramid/
+* https://www.codereliant.io/the-system-resiliency-pyramid/
 
 ---
 
